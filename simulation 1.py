@@ -90,7 +90,7 @@ class Server(Packet, Queue):
             self.packet_size = self.PacketDict.get(key1)
             self.service_time = self.packet_size / self.service_rate
 
-            # 判断server里面有没有正在运行的，有就踢出去
+            # check if there are remaining packet in server, if there is, then kick it out
             if self.serverdict != {}:
                 for key2 in self.serverdict:
                     break
@@ -99,13 +99,13 @@ class Server(Packet, Queue):
 
             if self.serverdict == {}:
                 if q.queuedict == {}:
-                    # 如果server和queue都是空的，该包直接出去
+                    # if server and queue are both empty, the packet goes out directly
                     self.depature_time = self.arrival_time + self.service_time
                     self.s_update(self.arrival_time, self.packet_size, self.depature_time, 0, self.count)
                 else:
                     key2 = max(q.queuedict)
                     if self.arrival_time > q.queuedict.get(key2)[1]:
-                        # 如果到达时间比queue中最后出来的时间还晚，queue全部出去，该包直接出去
+                        # if the arrival time is later than the depature time of the last pckt in queue, then empty queue and the pckt goes out straight foward
                         while q.queuedict:
                             key3 = min(q.queuedict)
                             self.s_update(key3, q.queuedict.get(key3)[0], q.queuedict.get(key3)[1],
@@ -114,7 +114,7 @@ class Server(Packet, Queue):
                         self.depature_time = self.arrival_time + self.service_time
                         self.s_update(self.arrival_time, self.packet_size, self.depature_time, 0, self.count)
                     else:
-                        # 如果到达时间在queue中某个包未来会在运行的时间，一个一个判断queue中的元素踢出去
+                        # if the arrival time is in the period of the future serving time of the pckt in the queue, then check the time with every pckt in the queue
                         while q.queuedict:
                             key3 = min(q.queuedict)
                             self.s_update(key3, q.queuedict.get(key3)[0], q.queuedict.get(key3)[1],
@@ -129,7 +129,7 @@ class Server(Packet, Queue):
                                 break
                             q.queuedict.pop(key3)
             else:
-                # 如果到达时，server还有在跑，包进queue
+                # if the server is not empty when the pckt arrives, the pckt goes into queue
                 for key2 in self.serverdict:
                     break
                 self.exist_pckt_amount = 0
@@ -141,7 +141,7 @@ class Server(Packet, Queue):
                 q.insert(self.arrival_time, self.packet_size, self.depature_time, self.exist_pckt_amount)
 
         while q.queuedict:
-            # 最后把未处理的queue搞完
+            # finalize the remaining pckts in queue
             key3 = min(q.queuedict)
             self.s_update(key3, q.queuedict.get(key3)[0], q.queuedict.get(key3)[1], q.queuedict.get(key3)[2],
                           self.count)
